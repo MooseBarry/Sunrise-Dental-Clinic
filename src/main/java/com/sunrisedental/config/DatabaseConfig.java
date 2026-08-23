@@ -15,6 +15,15 @@ public final class DatabaseConfig {
     }
 
     public static Connection getConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new SQLException(
+                    "MySQL JDBC driver is not available.",
+                    exception
+            );
+        }
+
         return DriverManager.getConnection(
                 getValue("DB_URL", "database.url"),
                 getValue("DB_USERNAME", "database.username"),
