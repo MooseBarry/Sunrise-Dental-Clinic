@@ -1,0 +1,18 @@
+# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Private configuration
+.env
+application.properties
