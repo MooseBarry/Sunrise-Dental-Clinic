@@ -16,3 +16,6 @@ Thumbs.db
 # Private configuration
 .env
 application.properties
+
+# SmartTomcat local runtime
+.smarttomcat/
