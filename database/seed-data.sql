@@ -79,3 +79,44 @@ SELECT
     TRUE
 FROM roles
 WHERE role_name = 'ADMIN';
+
+-- Demo dentist user
+-- Uses the administrator's BCrypt hash for this local demo
+INSERT IGNORE INTO users (
+    username,
+    password_hash,
+    full_name,
+    email,
+    contact_number,
+    role_id,
+    active
+)
+SELECT
+    'dr.perera',
+    administrator.password_hash,
+    'Dr. Kasun Perera',
+    'kasun.perera@sunrisedental.lk',
+    '0771234567',
+    dentist_role.role_id,
+    TRUE
+FROM users administrator
+         INNER JOIN roles dentist_role
+                    ON dentist_role.role_name = 'DENTIST'
+WHERE administrator.username = 'admin';
+
+-- Dentist professional record
+INSERT IGNORE INTO dentists (
+    user_id,
+    registration_number,
+    specialization,
+    consultation_fee,
+    active
+)
+SELECT
+    user_id,
+    'SLDC-1001',
+    'General Dentistry',
+    3000.00,
+    TRUE
+FROM users
+WHERE username = 'dr.perera';
