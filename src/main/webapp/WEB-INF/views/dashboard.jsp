@@ -1,10 +1,3 @@
-<%--
-  Created by IntelliJ IDEA.
-  User: Dulminnn
-  Date: 8/30/2026
-  Time: 5:00 PM
-  To change this template use File | Settings | File Templates.
---%>
 <%@ page contentType="text/html;charset=UTF-8" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -44,17 +37,19 @@
     </section>
 
     <section class="feature-grid">
+
         <article class="feature-card">
             <span>01</span>
             <h3>Appointments</h3>
             <p>Register, search and manage clinic appointments.</p>
         </article>
 
-        <article class="feature-card">
+        <a class="feature-card feature-link"
+           href="${pageContext.request.contextPath}/patients">
             <span>02</span>
             <h3>Patients</h3>
             <p>Maintain patient and contact information.</p>
-        </article>
+        </a>
 
         <article class="feature-card">
             <span>03</span>
@@ -67,6 +62,7 @@
             <h3>Reports</h3>
             <p>Review appointment and clinic activity reports.</p>
         </article>
+
     </section>
 </main>
 

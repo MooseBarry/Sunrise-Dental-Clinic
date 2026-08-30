@@ -15,8 +15,13 @@ import java.io.IOException;
 
 @WebFilter(urlPatterns = {
         "/dashboard",
+        "/patients",
+        "/patients/*",
+        "/appointments",
         "/appointments/*",
+        "/billing",
         "/billing/*",
+        "/reports",
         "/reports/*"
 })
 public class AuthenticationFilter implements Filter {

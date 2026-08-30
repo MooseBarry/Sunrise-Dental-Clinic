@@ -222,3 +222,171 @@ button:hover {
         font-size: 22px;
     }
 }
+
+.page-shell {
+    width: min(1180px, 92%);
+    margin: 38px auto;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.primary-link,
+.secondary-button,
+.cancel-link {
+    display: inline-block;
+    border-radius: 10px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.primary-link {
+    padding: 12px 17px;
+    color: var(--white);
+    background: var(--teal);
+}
+
+.secondary-button {
+    padding: 11px 16px;
+    color: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.content-panel {
+    padding: 30px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--white);
+}
+
+.form-panel {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.notice {
+    margin-bottom: 22px;
+    padding: 14px 16px;
+    border-radius: 10px;
+}
+
+.success-notice {
+    color: var(--success);
+    background: #eaf8f0;
+}
+
+.error-notice {
+    color: var(--danger);
+    background: #fff0ee;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 15px 13px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    color: var(--muted);
+    background: #f7fafb;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.empty-state {
+    padding: 48px 20px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 22px;
+    margin-top: 24px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+select,
+textarea {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--white);
+    font: inherit;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    margin-top: 26px;
+}
+
+.cancel-link {
+    color: var(--muted);
+}
+
+.submit-button {
+    width: auto;
+    min-width: 180px;
+    margin: 0;
+}
+
+.feature-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+}
+
+.feature-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(18, 48, 74, 0.12);
+}
+
+@media (max-width: 700px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full-width {
+        grid-column: auto;
+    }
+
+    .topbar-actions {
+        align-items: flex-end;
+        flex-direction: column;
+    }
+}
