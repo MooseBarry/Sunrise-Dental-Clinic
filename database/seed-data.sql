@@ -58,3 +58,24 @@ VALUES
         35000.00,
         TRUE
     );
+
+-- Initial administrator account
+INSERT IGNORE INTO users (
+    username,
+    password_hash,
+    full_name,
+    email,
+    contact_number,
+    role_id,
+    active
+)
+SELECT
+    'admin',
+    '$2a$12$tJvjYCulQTgRncJ1TQF1zezPthRW1.LXxj0TUO8eloYZN5QaWHjlu',
+    'System Administrator',
+    'admin@sunrisedental.lk',
+    '0770000000',
+    role_id,
+    TRUE
+FROM roles
+WHERE role_name = 'ADMIN';
