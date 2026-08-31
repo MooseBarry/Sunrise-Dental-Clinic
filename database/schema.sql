@@ -91,8 +91,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     CONSTRAINT chk_appointment_duration
     CHECK (duration_minutes > 0),
 
-    CONSTRAINT uq_dentist_start_time
-    UNIQUE (dentist_id, appointment_date, start_time),
+    INDEX idx_appointments_dentist_slot (
+        dentist_id,
+        appointment_date,
+        start_time
+    ),
 
     CONSTRAINT fk_appointments_patient
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
