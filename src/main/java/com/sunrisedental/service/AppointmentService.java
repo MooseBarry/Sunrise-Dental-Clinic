@@ -104,6 +104,70 @@ public class AppointmentService {
         );
     }
 
+    public AppointmentDetails changeStatus(
+            String appointmentNumber,
+            AppointmentStatus newStatus
+    ) throws SQLException {
+
+        if (appointmentNumber == null
+                || appointmentNumber.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Appointment number is required."
+            );
+        }
+
+        if (newStatus == null) {
+            throw new IllegalArgumentException(
+                    "Select a valid appointment status."
+            );
+        }
+
+        AppointmentDetails current =
+                appointmentDao.findByAppointmentNumber(
+                        appointmentNumber.trim()
+                ).orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Appointment was not found."
+                        )
+                );
+
+        if (current.status() == newStatus) {
+            return current;
+        }
+
+        if (current.status() != AppointmentStatus.SCHEDULED) {
+            throw new IllegalArgumentException(
+                    "A completed, cancelled or no-show "
+                            + "appointment cannot be changed."
+            );
+        }
+
+        if (newStatus == AppointmentStatus.SCHEDULED) {
+            throw new IllegalArgumentException(
+                    "Select a final appointment status."
+            );
+        }
+
+        boolean updated = appointmentDao.updateStatus(
+                current.appointmentNumber(),
+                newStatus
+        );
+
+        if (!updated) {
+            throw new SQLException(
+                    "Appointment status was not updated."
+            );
+        }
+
+        return appointmentDao.findByAppointmentNumber(
+                current.appointmentNumber()
+        ).orElseThrow(
+                () -> new SQLException(
+                        "Updated appointment could not be loaded."
+                )
+        );
+    }
+
     private void validateRequest(
             AppointmentRegistrationRequest request
     ) {

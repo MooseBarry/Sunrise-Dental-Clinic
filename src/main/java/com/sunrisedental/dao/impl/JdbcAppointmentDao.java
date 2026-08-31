@@ -43,7 +43,13 @@ public class JdbcAppointmentDao implements AppointmentDao {
                     "WHERE dentist_id = ? " +
                     "AND appointment_date = ? " +
                     "AND start_time = ? " +
+                    "AND status <> 'CANCELLED' " +
                     "LIMIT 1";
+
+    private static final String UPDATE_STATUS =
+            "UPDATE appointments " +
+                    "SET status = ? " +
+                    "WHERE appointment_number = ?";
 
     private static final String SELECT_DETAILS =
             "SELECT " +
@@ -310,6 +316,26 @@ public class JdbcAppointmentDao implements AppointmentDao {
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public boolean updateStatus(
+            String appointmentNumber,
+            AppointmentStatus status
+    ) throws SQLException {
+
+        try (
+                Connection connection =
+                        DatabaseConfig.getConnection();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(UPDATE_STATUS)
+        ) {
+            statement.setString(1, status.name());
+            statement.setString(2, appointmentNumber);
+
+            return statement.executeUpdate() == 1;
+        }
     }
 
     private AppointmentDetails mapAppointmentDetails(

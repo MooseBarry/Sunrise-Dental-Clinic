@@ -2,6 +2,7 @@ package com.sunrisedental.dao;
 
 import com.sunrisedental.model.Appointment;
 import com.sunrisedental.model.AppointmentDetails;
+import com.sunrisedental.model.AppointmentStatus;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -23,5 +24,10 @@ public interface AppointmentDao {
 
     Optional<AppointmentDetails> findByAppointmentNumber(
             String appointmentNumber
+    ) throws SQLException;
+
+    boolean updateStatus(
+            String appointmentNumber,
+            AppointmentStatus status
     ) throws SQLException;
 }

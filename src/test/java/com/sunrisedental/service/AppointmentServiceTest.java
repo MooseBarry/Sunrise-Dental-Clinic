@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -144,6 +146,70 @@ class AppointmentServiceTest {
                 service.findByAppointmentNumber(" ").isEmpty()
         );
     }
+    @Test
+    void shouldCancelScheduledAppointment() throws Exception {
+        FakeAppointmentDao dao = new FakeAppointmentDao();
+        dao.storedDetails = sampleDetails(
+                AppointmentStatus.SCHEDULED
+        );
+
+        AppointmentService service =
+                new AppointmentService(dao);
+
+        AppointmentDetails result = service.changeStatus(
+                "APT-TEST-001",
+                AppointmentStatus.CANCELLED
+        );
+
+        assertEquals(
+                AppointmentStatus.CANCELLED,
+                result.status()
+        );
+    }
+
+    @Test
+    void shouldRejectChangingCompletedAppointment() {
+        FakeAppointmentDao dao = new FakeAppointmentDao();
+        dao.storedDetails = sampleDetails(
+                AppointmentStatus.COMPLETED
+        );
+
+        AppointmentService service =
+                new AppointmentService(dao);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.changeStatus(
+                        "APT-TEST-001",
+                        AppointmentStatus.CANCELLED
+                )
+        );
+    }
+    private AppointmentDetails sampleDetails(
+            AppointmentStatus status
+    ) {
+        return new AppointmentDetails(
+                1L,
+                "APT-TEST-001",
+                "PAT-TEST-001",
+                "Test Patient",
+                "Colombo",
+                "0771234567",
+                "Dr. Kasun Perera",
+                "SLDC-1001",
+                "Dental Cleaning",
+                1,
+                new BigDecimal("5000.00"),
+                LocalDate.now().plusDays(1),
+                LocalTime.of(9, 0),
+                30,
+                "Dental examination",
+                status,
+                null,
+                "System Administrator",
+                LocalDateTime.now()
+        );
+    }
 
     private AppointmentRegistrationRequest validRequest() {
         return new AppointmentRegistrationRequest(
@@ -181,7 +247,11 @@ class AppointmentServiceTest {
         }
         @Override
         public List<AppointmentDetails> findAll() {
-            return List.of();
+            if (storedDetails == null) {
+                return List.of();
+            }
+
+            return List.of(storedDetails);
         }
 
         @Override
@@ -189,7 +259,50 @@ class AppointmentServiceTest {
         findByAppointmentNumber(
                 String appointmentNumber
         ) {
-            return Optional.empty();
+            if (storedDetails == null
+                    || !storedDetails.appointmentNumber()
+                    .equals(appointmentNumber)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(storedDetails);
         }
+
+        @Override
+        public boolean updateStatus(
+                String appointmentNumber,
+                AppointmentStatus status
+        ) {
+            if (storedDetails == null
+                    || !storedDetails.appointmentNumber()
+                    .equals(appointmentNumber)) {
+                return false;
+            }
+
+            storedDetails = new AppointmentDetails(
+                    storedDetails.appointmentId(),
+                    storedDetails.appointmentNumber(),
+                    storedDetails.patientNumber(),
+                    storedDetails.patientName(),
+                    storedDetails.patientAddress(),
+                    storedDetails.patientContact(),
+                    storedDetails.dentistName(),
+                    storedDetails.dentistRegistrationNumber(),
+                    storedDetails.treatmentName(),
+                    storedDetails.treatmentQuantity(),
+                    storedDetails.chargedFee(),
+                    storedDetails.appointmentDate(),
+                    storedDetails.startTime(),
+                    storedDetails.durationMinutes(),
+                    storedDetails.reason(),
+                    status,
+                    storedDetails.notes(),
+                    storedDetails.createdByName(),
+                    storedDetails.createdAt()
+            );
+
+            return true;
+        }
+        private AppointmentDetails storedDetails;
     }
 }

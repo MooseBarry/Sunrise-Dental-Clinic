@@ -2,6 +2,7 @@ package com.sunrisedental.controller;
 
 import com.sunrisedental.dao.impl.JdbcAppointmentDao;
 import com.sunrisedental.model.AppointmentDetails;
+import com.sunrisedental.model.AppointmentStatus;
 import com.sunrisedental.service.AppointmentService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -43,12 +44,29 @@ public class AppointmentDirectoryServlet
         String appointmentNumber =
                 request.getParameter("number");
 
+        /*
+         * Messages received after appointment creation
+         * or status updates.
+         */
         request.setAttribute(
                 "createdAppointmentNumber",
                 request.getParameter("created")
         );
 
+        request.setAttribute(
+                "updatedStatus",
+                request.getParameter("updated")
+        );
+
+        request.setAttribute(
+                "actionError",
+                request.getParameter("actionError")
+        );
+
         try {
+            /*
+             * Load all appointments for the directory table.
+             */
             List<AppointmentDetails> appointments =
                     appointmentService.getAllAppointments();
 
@@ -57,6 +75,10 @@ public class AppointmentDirectoryServlet
                     appointments
             );
 
+            /*
+             * Search only when an appointment number
+             * has been entered.
+             */
             if (appointmentNumber != null
                     && !appointmentNumber.isBlank()) {
 
@@ -72,10 +94,24 @@ public class AppointmentDirectoryServlet
                                 );
 
                 if (result.isPresent()) {
+                    AppointmentDetails appointment =
+                            result.get();
+
                     request.setAttribute(
                             "appointment",
-                            result.get()
+                            appointment
                     );
+
+                    /*
+                     * Only scheduled appointments may move
+                     * to a final status.
+                     */
+                    request.setAttribute(
+                            "canChangeStatus",
+                            appointment.status()
+                                    == AppointmentStatus.SCHEDULED
+                    );
+
                 } else {
                     request.setAttribute(
                             "error",
