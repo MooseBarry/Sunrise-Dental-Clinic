@@ -1,10 +1,13 @@
 package com.sunrisedental.dao;
 
 import com.sunrisedental.model.Appointment;
+import com.sunrisedental.model.AppointmentDetails;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
 
 public interface AppointmentDao {
 
@@ -14,5 +17,11 @@ public interface AppointmentDao {
             long dentistId,
             LocalDate appointmentDate,
             LocalTime startTime
+    ) throws SQLException;
+
+    List<AppointmentDetails> findAll() throws SQLException;
+
+    Optional<AppointmentDetails> findByAppointmentNumber(
+            String appointmentNumber
     ) throws SQLException;
 }

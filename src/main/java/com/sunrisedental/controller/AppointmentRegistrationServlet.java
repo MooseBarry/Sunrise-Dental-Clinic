@@ -139,7 +139,7 @@ public class AppointmentRegistrationServlet
 
             response.sendRedirect(
                     request.getContextPath()
-                            + "/appointments/new?created="
+                            + "/appointments?created="
                             + number
             );
 

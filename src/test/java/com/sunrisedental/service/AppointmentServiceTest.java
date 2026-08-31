@@ -4,9 +4,12 @@ import com.sunrisedental.dao.AppointmentDao;
 import com.sunrisedental.model.Appointment;
 import com.sunrisedental.model.AppointmentStatus;
 import org.junit.jupiter.api.Test;
+import com.sunrisedental.model.AppointmentDetails;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -130,6 +133,17 @@ class AppointmentServiceTest {
                 () -> service.register(request)
         );
     }
+    @Test
+    void shouldRejectBlankAppointmentSearch() throws Exception {
+        AppointmentService service =
+                new AppointmentService(
+                        new FakeAppointmentDao()
+                );
+
+        assertTrue(
+                service.findByAppointmentNumber(" ").isEmpty()
+        );
+    }
 
     private AppointmentRegistrationRequest validRequest() {
         return new AppointmentRegistrationRequest(
@@ -164,6 +178,18 @@ class AppointmentServiceTest {
                 LocalTime startTime
         ) {
             return slotTaken;
+        }
+        @Override
+        public List<AppointmentDetails> findAll() {
+            return List.of();
+        }
+
+        @Override
+        public Optional<AppointmentDetails>
+        findByAppointmentNumber(
+                String appointmentNumber
+        ) {
+            return Optional.empty();
         }
     }
 }

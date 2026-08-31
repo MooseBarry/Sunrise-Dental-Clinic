@@ -3,12 +3,15 @@ package com.sunrisedental.service;
 import com.sunrisedental.dao.AppointmentDao;
 import com.sunrisedental.model.Appointment;
 import com.sunrisedental.model.AppointmentStatus;
+import com.sunrisedental.model.AppointmentDetails;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
 public class AppointmentService {
 
@@ -78,6 +81,26 @@ public class AppointmentService {
                 appointment.status(),
                 appointment.notes(),
                 appointment.createdBy()
+        );
+    }
+    public List<AppointmentDetails> getAllAppointments()
+            throws SQLException {
+
+        return appointmentDao.findAll();
+    }
+
+    public Optional<AppointmentDetails>
+    findByAppointmentNumber(
+            String appointmentNumber
+    ) throws SQLException {
+
+        if (appointmentNumber == null
+                || appointmentNumber.isBlank()) {
+            return Optional.empty();
+        }
+
+        return appointmentDao.findByAppointmentNumber(
+                appointmentNumber.trim()
         );
     }
 
