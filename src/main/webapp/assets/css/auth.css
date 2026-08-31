@@ -390,3 +390,16 @@ textarea {
         flex-direction: column;
     }
 }
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.form-panel h2 {
+    margin-bottom: 8px;
+}
+
+select option {
+    color: var(--text);
+}

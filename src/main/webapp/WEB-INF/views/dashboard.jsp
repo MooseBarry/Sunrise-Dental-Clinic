@@ -38,11 +38,12 @@
 
     <section class="feature-grid">
 
-        <article class="feature-card">
+        <a class="feature-card feature-link"
+           href="${pageContext.request.contextPath}/appointments/new">
             <span>01</span>
             <h3>Appointments</h3>
             <p>Register, search and manage clinic appointments.</p>
-        </article>
+        </a>
 
         <a class="feature-card feature-link"
            href="${pageContext.request.contextPath}/patients">
