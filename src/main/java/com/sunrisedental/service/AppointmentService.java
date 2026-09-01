@@ -2,25 +2,28 @@ package com.sunrisedental.service;
 
 import com.sunrisedental.dao.AppointmentDao;
 import com.sunrisedental.model.Appointment;
-import com.sunrisedental.model.AppointmentStatus;
 import com.sunrisedental.model.AppointmentDetails;
+import com.sunrisedental.model.AppointmentStatus;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.UUID;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 public class AppointmentService {
 
-    private static final DateTimeFormatter NUMBER_DATE_FORMAT =
+    private static final DateTimeFormatter
+            NUMBER_DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final AppointmentDao appointmentDao;
 
-    public AppointmentService(AppointmentDao appointmentDao) {
+    public AppointmentService(
+            AppointmentDao appointmentDao
+    ) {
         if (appointmentDao == null) {
             throw new IllegalArgumentException(
                     "AppointmentDao must not be null."
@@ -36,34 +39,42 @@ public class AppointmentService {
 
         validateRequest(request);
 
-        boolean slotExists =
-                appointmentDao.existsDentistSlot(
+        boolean overlapExists =
+                appointmentDao.hasOverlappingAppointment(
                         request.dentistId(),
                         request.appointmentDate(),
-                        request.startTime()
+                        request.startTime(),
+                        request.durationMinutes()
                 );
 
-        if (slotExists) {
+        if (overlapExists) {
             throw new IllegalArgumentException(
-                    "The selected dentist already has "
-                            + "an appointment at this time."
+                    "The selected time overlaps with another "
+                            + "appointment for this dentist."
             );
         }
 
-        Appointment appointment = new Appointment(
-                0,
-                generateAppointmentNumber(request),
-                request.patientId(),
-                request.dentistId(),
-                request.treatmentId(),
-                request.appointmentDate(),
-                request.startTime(),
-                request.durationMinutes(),
-                normalize(request.reason(), 255),
-                AppointmentStatus.SCHEDULED,
-                normalize(request.notes(), 2000),
-                request.createdBy()
-        );
+        Appointment appointment =
+                new Appointment(
+                        0,
+                        generateAppointmentNumber(request),
+                        request.patientId(),
+                        request.dentistId(),
+                        request.treatmentId(),
+                        request.appointmentDate(),
+                        request.startTime(),
+                        request.durationMinutes(),
+                        normalize(
+                                request.reason(),
+                                255
+                        ),
+                        AppointmentStatus.SCHEDULED,
+                        normalize(
+                                request.notes(),
+                                2000
+                        ),
+                        request.createdBy()
+                );
 
         long appointmentId =
                 appointmentDao.create(appointment);
@@ -83,6 +94,7 @@ public class AppointmentService {
                 appointment.createdBy()
         );
     }
+
     public List<AppointmentDetails> getAllAppointments()
             throws SQLException {
 
@@ -100,7 +112,9 @@ public class AppointmentService {
         }
 
         return appointmentDao.findByAppointmentNumber(
-                appointmentNumber.trim()
+                normalizeAppointmentNumber(
+                        appointmentNumber
+                )
         );
     }
 
@@ -122,9 +136,14 @@ public class AppointmentService {
             );
         }
 
+        String normalizedNumber =
+                normalizeAppointmentNumber(
+                        appointmentNumber
+                );
+
         AppointmentDetails current =
                 appointmentDao.findByAppointmentNumber(
-                        appointmentNumber.trim()
+                        normalizedNumber
                 ).orElseThrow(
                         () -> new IllegalArgumentException(
                                 "Appointment was not found."
@@ -135,7 +154,8 @@ public class AppointmentService {
             return current;
         }
 
-        if (current.status() != AppointmentStatus.SCHEDULED) {
+        if (current.status()
+                != AppointmentStatus.SCHEDULED) {
             throw new IllegalArgumentException(
                     "A completed, cancelled or no-show "
                             + "appointment cannot be changed."
@@ -148,10 +168,11 @@ public class AppointmentService {
             );
         }
 
-        boolean updated = appointmentDao.updateStatus(
-                current.appointmentNumber(),
-                newStatus
-        );
+        boolean updated =
+                appointmentDao.updateStatus(
+                        current.appointmentNumber(),
+                        newStatus
+                );
 
         if (!updated) {
             throw new SQLException(
@@ -223,9 +244,25 @@ public class AppointmentService {
         }
 
         if (request.durationMinutes() < 15
-                || request.durationMinutes() > 180) {
+                || request.durationMinutes() > 180
+                || request.durationMinutes() % 15 != 0) {
             throw new IllegalArgumentException(
-                    "Duration must be between 15 and 180 minutes."
+                    "Duration must be between 15 and 180 "
+                            + "minutes in 15-minute intervals."
+            );
+        }
+
+        LocalDateTime appointmentEnd =
+                appointmentDateTime.plusMinutes(
+                        request.durationMinutes()
+                );
+
+        if (!appointmentEnd.toLocalDate().equals(
+                request.appointmentDate()
+        )) {
+            throw new IllegalArgumentException(
+                    "An appointment cannot continue "
+                            + "into the following day."
             );
         }
     }
@@ -242,6 +279,14 @@ public class AppointmentService {
                 .toUpperCase(Locale.ROOT);
 
         return "APT-" + date + "-" + identifier;
+    }
+
+    private String normalizeAppointmentNumber(
+            String appointmentNumber
+    ) {
+        return appointmentNumber
+                .trim()
+                .toUpperCase(Locale.ROOT);
     }
 
     private String normalize(

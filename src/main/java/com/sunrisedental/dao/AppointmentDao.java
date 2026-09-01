@@ -14,10 +14,11 @@ public interface AppointmentDao {
 
     long create(Appointment appointment) throws SQLException;
 
-    boolean existsDentistSlot(
+    boolean hasOverlappingAppointment(
             long dentistId,
             LocalDate appointmentDate,
-            LocalTime startTime
+            LocalTime startTime,
+            int durationMinutes
     ) throws SQLException;
 
     List<AppointmentDetails> findAll() throws SQLException;
