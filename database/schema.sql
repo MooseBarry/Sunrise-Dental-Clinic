@@ -223,3 +223,54 @@ CREATE TABLE IF NOT EXISTS bill_payments (
                                                  FOREIGN KEY (received_by)
                                                      REFERENCES users(user_id)
 );
+
+CREATE TABLE IF NOT EXISTS staff_notifications (
+    notification_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    recipient_user_id BIGINT NOT NULL,
+    notification_type VARCHAR(30) NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    reference_type VARCHAR(30),
+    reference_value VARCHAR(50),
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_notifications_recipient (
+        recipient_user_id,
+        read_at,
+        created_at
+    ),
+
+    CONSTRAINT chk_notification_type
+    CHECK (
+        notification_type IN (
+            'APPOINTMENT',
+            'BILLING',
+            'PAYMENT',
+            'SYSTEM'
+        )
+    ),
+
+    CONSTRAINT fk_notifications_recipient
+    FOREIGN KEY (recipient_user_id)
+    REFERENCES users(user_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    audit_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    actor_user_id BIGINT NULL,
+    action_name VARCHAR(80) NOT NULL,
+    entity_type VARCHAR(40) NOT NULL,
+    entity_reference VARCHAR(60),
+    details VARCHAR(500),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_audit_created_at (created_at),
+    INDEX idx_audit_entity (entity_type, entity_reference),
+
+    CONSTRAINT fk_audit_actor
+    FOREIGN KEY (actor_user_id)
+    REFERENCES users(user_id)
+    ON DELETE SET NULL
+);

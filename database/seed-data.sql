@@ -5,7 +5,8 @@ INSERT IGNORE INTO roles (role_name)
 VALUES
     ('ADMIN'),
     ('RECEPTIONIST'),
-    ('DENTIST');
+    ('DENTIST'),
+    ('CASHIER');
 
 -- Initial treatment catalogue
 INSERT IGNORE INTO treatments (
@@ -120,3 +121,50 @@ SELECT
     TRUE
 FROM users
 WHERE username = 'dr.perera';
+
+-- Demo receptionist and cashier accounts use the administrator's
+-- BCrypt hash for local demonstration. Change their passwords through
+-- Staff Management before using the system outside development.
+INSERT IGNORE INTO users (
+    username,
+    password_hash,
+    full_name,
+    email,
+    contact_number,
+    role_id,
+    active
+)
+SELECT
+    'reception',
+    administrator.password_hash,
+    'Clinic Receptionist',
+    'reception@sunrisedental.lk',
+    '0770000001',
+    staff_role.role_id,
+    TRUE
+FROM users administrator
+INNER JOIN roles staff_role
+    ON staff_role.role_name = 'RECEPTIONIST'
+WHERE administrator.username = 'admin';
+
+INSERT IGNORE INTO users (
+    username,
+    password_hash,
+    full_name,
+    email,
+    contact_number,
+    role_id,
+    active
+)
+SELECT
+    'cashier',
+    administrator.password_hash,
+    'Clinic Cashier',
+    'cashier@sunrisedental.lk',
+    '0770000002',
+    staff_role.role_id,
+    TRUE
+FROM users administrator
+INNER JOIN roles staff_role
+    ON staff_role.role_name = 'CASHIER'
+WHERE administrator.username = 'admin';
