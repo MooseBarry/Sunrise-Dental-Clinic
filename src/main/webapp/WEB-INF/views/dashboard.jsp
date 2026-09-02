@@ -1,71 +1,89 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="pageTitle" value="Dashboard" scope="request"/>
+<jsp:include page="/WEB-INF/views/includes/header.jsp"/>
 
-    <title>Dashboard | Sunrise Dental Clinic</title>
-
-    <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/auth.css">
-</head>
-<body class="dashboard-page">
-
-<header class="topbar">
+<section class="page-heading">
     <div>
-        <p class="eyebrow">Sunrise Dental Clinic</p>
-        <h1>Staff Dashboard</h1>
+        <span class="eyebrow">Clinic overview</span>
+        <h1>Good day, <c:out value="${currentUser.fullName()}"/></h1>
+        <p>Here is the latest operational picture for Sunrise Dental Clinic.</p>
     </div>
+    <span class="role-pill"><c:out value="${currentUser.role().displayName()}"/></span>
+</section>
 
-    <form method="post"
-          action="${pageContext.request.contextPath}/logout">
-        <button class="logout-button" type="submit">
-            Sign out
-        </button>
-    </form>
-</header>
+<c:if test="${not empty dashboardWarning}">
+    <div class="alert alert-warning"><c:out value="${dashboardWarning}"/></div>
+</c:if>
 
-<main class="dashboard-content">
-    <section class="welcome-panel">
-        <p>Signed in as</p>
-        <h2>${requestScope.currentUser.fullName()}</h2>
-        <span class="role-badge">
-            ${requestScope.currentUser.role()}
-        </span>
-    </section>
+<section class="metric-grid">
+    <c:if test="${canViewAppointments}">
+    <article class="metric-card">
+        <span>Today's appointments</span>
+        <strong><c:out value="${empty todayReport ? 0 : todayReport.totalAppointments()}"/></strong>
+        <small><c:out value="${empty todayReport ? 0 : todayReport.scheduledAppointments()}"/> still scheduled</small>
+    </article>
+    <article class="metric-card">
+        <span>Completed today</span>
+        <strong><c:out value="${empty todayReport ? 0 : todayReport.completedAppointments()}"/></strong>
+        <small>Clinical visits completed</small>
+    </article>
+    </c:if>
+    <c:if test="${canViewBilling}">
+    <article class="metric-card">
+        <span>Revenue received</span>
+        <strong>LKR <c:out value="${empty todayReport ? '0.00' : todayReport.receivedAmount()}"/></strong>
+        <small>Payments recorded today</small>
+    </article>
+    </c:if>
+    <article class="metric-card">
+        <span>Unread notifications</span>
+        <strong><c:out value="${unreadCount}"/></strong>
+        <small><a href="${pageContext.request.contextPath}/notifications">Open notification centre</a></small>
+    </article>
+</section>
 
-    <section class="feature-grid">
+<section class="content-grid content-grid-main">
+    <c:if test="${canViewAppointments}">
+    <article class="panel">
+        <div class="panel-header">
+            <div><span class="eyebrow">Schedule</span><h2>Upcoming appointments</h2></div>
+            <c:if test="${canViewAppointments}">
+                <a class="text-link" href="${pageContext.request.contextPath}/appointments">View directory</a>
+            </c:if>
+        </div>
+        <c:choose>
+            <c:when test="${empty upcomingAppointments}">
+                <div class="empty-state">No upcoming scheduled appointments were found.</div>
+            </c:when>
+            <c:otherwise>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Appointment</th><th>Patient</th><th>Dentist</th><th>Date &amp; time</th></tr></thead>
+                        <tbody>
+                        <c:forEach var="item" items="${upcomingAppointments}">
+                            <tr>
+                                <td><strong><c:out value="${item.appointmentNumber()}"/></strong></td>
+                                <td><c:out value="${item.patientName()}"/></td>
+                                <td><c:out value="${item.dentistName()}"/></td>
+                                <td><c:out value="${item.appointmentDate()}"/> · <c:out value="${item.startTime()}"/></td>
+                            </tr>
+                        </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
+            </c:otherwise>
+        </c:choose>
+    </article>
+    </c:if>
 
-        <a class="feature-card feature-link"
-           href="${pageContext.request.contextPath}/appointments">
-            <span>01</span>
-            <h3>Appointments</h3>
-            <p>Register, search and manage clinic appointments.</p>
-        </a>
+    <aside class="panel quick-actions">
+        <div class="panel-header"><div><span class="eyebrow">Shortcuts</span><h2>Quick actions</h2></div></div>
+        <c:if test="${canManagePatients}"><a href="${pageContext.request.contextPath}/patients/new"><strong>Register patient</strong><span>Create a new clinical record</span></a></c:if>
+        <c:if test="${canManageAppointments}"><a href="${pageContext.request.contextPath}/appointments/new"><strong>Book appointment</strong><span>Check availability and reserve time</span></a></c:if>
+        <c:if test="${canManageBilling}"><a href="${pageContext.request.contextPath}/billing"><strong>Create invoice</strong><span>Bill a completed appointment</span></a></c:if>
+        <c:if test="${canViewReports}"><a href="${pageContext.request.contextPath}/reports"><strong>Management report</strong><span>Review performance and revenue</span></a></c:if>
+    </aside>
+</section>
 
-        <a class="feature-card feature-link"
-           href="${pageContext.request.contextPath}/patients">
-            <span>02</span>
-            <h3>Patients</h3>
-            <p>Maintain patient and contact information.</p>
-        </a>
-
-        <article class="feature-card">
-            <span>03</span>
-            <h3>Billing</h3>
-            <p>Calculate treatment charges and print bills.</p>
-        </article>
-
-        <article class="feature-card">
-            <span>04</span>
-            <h3>Reports</h3>
-            <p>Review appointment and clinic activity reports.</p>
-        </article>
-
-    </section>
-</main>
-
-</body>
-</html>
+<jsp:include page="/WEB-INF/views/includes/footer.jsp"/>
