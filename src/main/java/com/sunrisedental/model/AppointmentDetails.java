@@ -12,6 +12,7 @@ public record AppointmentDetails(
         String patientName,
         String patientAddress,
         String patientContact,
+        String patientEmail,
         String dentistName,
         String dentistRegistrationNumber,
         String treatmentName,

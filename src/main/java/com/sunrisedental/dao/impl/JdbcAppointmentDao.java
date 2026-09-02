@@ -73,6 +73,7 @@ public class JdbcAppointmentDao implements AppointmentDao {
                     "AS patient_name, " +
                     "p.address AS patient_address, " +
                     "p.contact_number AS patient_contact, " +
+                    "p.email AS patient_email, " +
                     "dentist_user.full_name AS dentist_name, " +
                     "d.registration_number, " +
                     "t.treatment_name, " +
@@ -454,6 +455,7 @@ public class JdbcAppointmentDao implements AppointmentDao {
                 resultSet.getString("patient_name"),
                 resultSet.getString("patient_address"),
                 resultSet.getString("patient_contact"),
+                resultSet.getString("patient_email"),
                 resultSet.getString("dentist_name"),
                 resultSet.getString(
                         "registration_number"

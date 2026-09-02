@@ -4,11 +4,16 @@ import com.sunrisedental.dao.ClinicReferenceDao;
 import com.sunrisedental.dao.impl.JdbcAppointmentDao;
 import com.sunrisedental.dao.impl.JdbcClinicReferenceDao;
 import com.sunrisedental.dao.impl.JdbcPatientDao;
+import com.sunrisedental.dao.impl.JdbcNotificationDao;
 import com.sunrisedental.model.Appointment;
 import com.sunrisedental.service.AppointmentRegistrationRequest;
 import com.sunrisedental.service.AppointmentService;
 import com.sunrisedental.service.AuthenticatedUser;
 import com.sunrisedental.service.PatientService;
+import com.sunrisedental.service.AuditService;
+import com.sunrisedental.service.EmailService;
+import com.sunrisedental.service.NotificationCoordinator;
+import com.sunrisedental.service.NotificationService;
 import com.sunrisedental.util.SessionConstants;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -39,6 +44,8 @@ public class AppointmentRegistrationServlet
     private AppointmentService appointmentService;
     private PatientService patientService;
     private ClinicReferenceDao referenceDao;
+    private NotificationCoordinator notificationCoordinator;
+    private AuditService auditService;
 
     @Override
     public void init() {
@@ -51,6 +58,11 @@ public class AppointmentRegistrationServlet
         );
 
         referenceDao = new JdbcClinicReferenceDao();
+        notificationCoordinator = new NotificationCoordinator(
+                new NotificationService(new JdbcNotificationDao()),
+                new EmailService()
+        );
+        auditService = new AuditService();
     }
 
     @Override
@@ -132,6 +144,18 @@ public class AppointmentRegistrationServlet
                             registrationRequest
                     );
 
+            appointmentService.findByAppointmentNumber(
+                    appointment.appointmentNumber()
+            ).ifPresent(notificationCoordinator::appointmentCreated);
+
+            auditService.record(
+                    currentUser.userId(),
+                    "CREATE_APPOINTMENT",
+                    "APPOINTMENT",
+                    appointment.appointmentNumber(),
+                    null
+            );
+
             String number = URLEncoder.encode(
                     appointment.appointmentNumber(),
                     StandardCharsets.UTF_8
@@ -171,6 +195,13 @@ public class AppointmentRegistrationServlet
 
     private void prepareForm(HttpServletRequest request) {
         request.setAttribute("today", LocalDate.now());
+        request.setAttribute(
+                "appointmentDurations",
+                List.of(
+                        15, 30, 45, 60, 75, 90,
+                        105, 120, 135, 150, 165, 180
+                )
+        );
 
         try {
             request.setAttribute(

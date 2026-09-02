@@ -101,6 +101,31 @@ public class AppointmentService {
         return appointmentDao.findAll();
     }
 
+    public boolean isDentistAvailable(
+            long dentistId,
+            java.time.LocalDate appointmentDate,
+            java.time.LocalTime startTime,
+            int durationMinutes
+    ) throws SQLException {
+        if (dentistId <= 0
+                || appointmentDate == null
+                || startTime == null
+                || durationMinutes < 15
+                || durationMinutes > 180
+                || durationMinutes % 15 != 0) {
+            throw new IllegalArgumentException(
+                    "Valid dentist, date, time and duration are required."
+            );
+        }
+
+        return !appointmentDao.hasOverlappingAppointment(
+                dentistId,
+                appointmentDate,
+                startTime,
+                durationMinutes
+        );
+    }
+
     public Optional<AppointmentDetails>
     findByAppointmentNumber(
             String appointmentNumber

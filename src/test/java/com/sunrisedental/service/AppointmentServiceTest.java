@@ -238,6 +238,7 @@ class AppointmentServiceTest {
                 "Test Patient",
                 "Colombo",
                 "0771234567",
+                "patient@example.com",
                 "Dr. Kasun Perera",
                 "SLDC-1001",
                 "Dental Cleaning",
@@ -322,6 +323,7 @@ class AppointmentServiceTest {
                     storedDetails.patientName(),
                     storedDetails.patientAddress(),
                     storedDetails.patientContact(),
+                    storedDetails.patientEmail(),
                     storedDetails.dentistName(),
                     storedDetails
                             .dentistRegistrationNumber(),

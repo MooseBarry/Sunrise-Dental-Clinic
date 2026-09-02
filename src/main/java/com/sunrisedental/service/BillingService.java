@@ -3,7 +3,9 @@ package com.sunrisedental.service;
 import com.sunrisedental.dao.BillDao;
 import com.sunrisedental.model.AppointmentStatus;
 import com.sunrisedental.model.Bill;
+import com.sunrisedental.model.BillDetails;
 import com.sunrisedental.model.BillPayment;
+import com.sunrisedental.model.BillableAppointment;
 import com.sunrisedental.model.BillingSource;
 import com.sunrisedental.model.PaymentMethod;
 import com.sunrisedental.model.PaymentStatus;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class BillingService {
 
     private static final int MONEY_SCALE = 2;
+
     private static final RoundingMode MONEY_ROUNDING =
             RoundingMode.HALF_UP;
 
@@ -259,6 +262,29 @@ public class BillingService {
         }
 
         return billDao.findPaymentsByBillId(billId);
+    }
+
+    public Optional<BillDetails> findDetailsByBillNumber(
+            String billNumber
+    ) {
+        if (billNumber == null || billNumber.isBlank()) {
+            return Optional.empty();
+        }
+
+        return billDao.findDetailsByBillNumber(
+                billNumber.trim()
+                        .toUpperCase(Locale.ROOT)
+        );
+    }
+
+    public List<BillDetails> getAllBillDetails() {
+        return billDao.findAllDetails();
+    }
+
+    public List<BillableAppointment>
+    getCompletedUnbilledAppointments() {
+        return billDao
+                .findCompletedUnbilledAppointments();
     }
 
     private BigDecimal normaliseDatabaseAmount(

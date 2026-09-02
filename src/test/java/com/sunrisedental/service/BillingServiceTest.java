@@ -3,12 +3,14 @@ package com.sunrisedental.service;
 import com.sunrisedental.dao.BillDao;
 import com.sunrisedental.model.AppointmentStatus;
 import com.sunrisedental.model.Bill;
+import com.sunrisedental.model.BillDetails;
 import com.sunrisedental.model.BillPayment;
 import com.sunrisedental.model.BillingSource;
 import com.sunrisedental.model.PaymentMethod;
 import com.sunrisedental.model.PaymentStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.sunrisedental.model.BillableAppointment;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -413,6 +415,17 @@ class BillingServiceTest {
         }
 
         @Override
+        public Optional<BillDetails>
+        findDetailsByBillNumber(String billNumber) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<BillDetails> findAllDetails() {
+            return List.of();
+        }
+
+        @Override
         public void recordPayment(BillPayment payment) {
             Bill currentBill = bills.values()
                     .stream()
@@ -488,6 +501,11 @@ class BillingServiceTest {
                             List.of()
                     )
             );
+        }
+        @Override
+        public List<BillableAppointment>
+        findCompletedUnbilledAppointments() {
+            return List.of();
         }
     }
 }

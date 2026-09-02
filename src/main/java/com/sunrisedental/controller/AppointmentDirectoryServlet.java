@@ -44,6 +44,15 @@ public class AppointmentDirectoryServlet
         String appointmentNumber =
                 request.getParameter("number");
 
+        request.setAttribute(
+                "finalStatuses",
+                List.of(
+                        AppointmentStatus.COMPLETED,
+                        AppointmentStatus.CANCELLED,
+                        AppointmentStatus.NO_SHOW
+                )
+        );
+
         /*
          * Messages received after appointment creation
          * or status updates.

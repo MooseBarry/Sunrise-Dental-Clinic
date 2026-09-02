@@ -8,6 +8,8 @@ import com.sunrisedental.model.BillPayment;
 import com.sunrisedental.model.BillingSource;
 import com.sunrisedental.model.PaymentMethod;
 import com.sunrisedental.model.PaymentStatus;
+import com.sunrisedental.model.BillDetails;
+import com.sunrisedental.model.BillableAppointment;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -22,6 +24,55 @@ import java.util.Optional;
 
 public class JdbcBillDao implements BillDao {
 
+    private static final String FIND_BILLABLE_APPOINTMENTS =
+            "SELECT " +
+                    "a.appointment_id, " +
+                    "a.appointment_number, " +
+                    "p.patient_number, " +
+                    "CONCAT(p.first_name, ' ', p.last_name) " +
+                    "AS patient_name, " +
+                    "dentist_user.full_name AS dentist_name, " +
+                    "a.appointment_date, " +
+                    "a.start_time AS appointment_time, " +
+                    "COALESCE(" +
+                    "GROUP_CONCAT(" +
+                    "CONCAT(t.treatment_name, ' x ', at.quantity) " +
+                    "ORDER BY t.treatment_name SEPARATOR ', '" +
+                    "), " +
+                    "'No treatment recorded'" +
+                    ") AS treatment_summary, " +
+                    "(" +
+                    "d.consultation_fee + " +
+                    "COALESCE(SUM(at.quantity * at.charged_fee), 0.00)" +
+                    ") AS estimated_total " +
+                    "FROM appointments a " +
+                    "JOIN patients p " +
+                    "ON p.patient_id = a.patient_id " +
+                    "JOIN dentists d " +
+                    "ON d.dentist_id = a.dentist_id " +
+                    "JOIN users dentist_user " +
+                    "ON dentist_user.user_id = d.user_id " +
+                    "LEFT JOIN appointment_treatments at " +
+                    "ON at.appointment_id = a.appointment_id " +
+                    "LEFT JOIN treatments t " +
+                    "ON t.treatment_id = at.treatment_id " +
+                    "LEFT JOIN bills b " +
+                    "ON b.appointment_id = a.appointment_id " +
+                    "WHERE a.status = 'COMPLETED' " +
+                    "AND b.bill_id IS NULL " +
+                    "GROUP BY " +
+                    "a.appointment_id, " +
+                    "a.appointment_number, " +
+                    "p.patient_number, " +
+                    "p.first_name, " +
+                    "p.last_name, " +
+                    "dentist_user.full_name, " +
+                    "a.appointment_date, " +
+                    "a.start_time, " +
+                    "d.consultation_fee " +
+                    "ORDER BY " +
+                    "a.appointment_date DESC, " +
+                    "a.start_time DESC";
     private static final String FIND_BILLING_SOURCE =
             "SELECT " +
                     "a.appointment_id, " +
@@ -123,6 +174,145 @@ public class JdbcBillDao implements BillDao {
                     "FROM bill_payments " +
                     "WHERE bill_id = ? " +
                     "ORDER BY paid_at ASC, payment_id ASC";
+
+    private static final String BILL_DETAILS_SELECT =
+            "SELECT " +
+                    "b.bill_id, " +
+                    "b.bill_number, " +
+                    "b.appointment_id, " +
+                    "a.appointment_number, " +
+                    "p.patient_number, " +
+                    "CONCAT(p.first_name, ' ', p.last_name) " +
+                    "AS patient_name, " +
+                    "p.contact_number AS patient_contact, " +
+                    "p.email AS patient_email, " +
+                    "p.address AS patient_address, " +
+                    "dentist_user.full_name AS dentist_name, " +
+                    "a.appointment_date, " +
+                    "a.start_time AS appointment_time, " +
+                    "COALESCE(" +
+                    "GROUP_CONCAT(" +
+                    "CONCAT(t.treatment_name, ' x ', at.quantity) " +
+                    "ORDER BY t.treatment_name SEPARATOR ', '" +
+                    "), " +
+                    "'No treatment recorded'" +
+                    ") AS treatment_summary, " +
+                    "b.consultation_fee, " +
+                    "b.treatment_total, " +
+                    "b.discount_amount, " +
+                    "b.total_amount, " +
+                    "b.amount_paid, " +
+                    "b.payment_status, " +
+                    "issuer.full_name AS issued_by_name, " +
+                    "b.issued_at " +
+                    "FROM bills b " +
+                    "JOIN appointments a " +
+                    "ON a.appointment_id = b.appointment_id " +
+                    "JOIN patients p " +
+                    "ON p.patient_id = a.patient_id " +
+                    "JOIN dentists d " +
+                    "ON d.dentist_id = a.dentist_id " +
+                    "JOIN users dentist_user " +
+                    "ON dentist_user.user_id = d.user_id " +
+                    "LEFT JOIN appointment_treatments at " +
+                    "ON at.appointment_id = a.appointment_id " +
+                    "LEFT JOIN treatments t " +
+                    "ON t.treatment_id = at.treatment_id " +
+                    "LEFT JOIN users issuer " +
+                    "ON issuer.user_id = b.issued_by ";
+
+    private static final String BILL_DETAILS_GROUP =
+            "GROUP BY " +
+                    "b.bill_id, " +
+                    "b.bill_number, " +
+                    "b.appointment_id, " +
+                    "a.appointment_number, " +
+                    "p.patient_number, " +
+                    "p.first_name, " +
+                    "p.last_name, " +
+                    "p.contact_number, " +
+                    "p.email, " +
+                    "p.address, " +
+                    "dentist_user.full_name, " +
+                    "a.appointment_date, " +
+                    "a.start_time, " +
+                    "b.consultation_fee, " +
+                    "b.treatment_total, " +
+                    "b.discount_amount, " +
+                    "b.total_amount, " +
+                    "b.amount_paid, " +
+                    "b.payment_status, " +
+                    "issuer.full_name, " +
+                    "b.issued_at ";
+
+    private static final String FIND_DETAILS_BY_NUMBER =
+            BILL_DETAILS_SELECT +
+                    "WHERE b.bill_number = ? " +
+                    BILL_DETAILS_GROUP;
+
+    private static final String FIND_ALL_DETAILS =
+            BILL_DETAILS_SELECT +
+                    BILL_DETAILS_GROUP +
+                    "ORDER BY b.issued_at DESC, b.bill_id DESC";
+
+    @Override
+    public List<BillableAppointment>
+    findCompletedUnbilledAppointments() {
+        List<BillableAppointment> appointments =
+                new ArrayList<>();
+
+        try (
+                Connection connection =
+                        DatabaseConfig.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                FIND_BILLABLE_APPOINTMENTS
+                        );
+                ResultSet resultSet =
+                        statement.executeQuery()
+        ) {
+            while (resultSet.next()) {
+                appointments.add(
+                        new BillableAppointment(
+                                resultSet.getLong(
+                                        "appointment_id"
+                                ),
+                                resultSet.getString(
+                                        "appointment_number"
+                                ),
+                                resultSet.getString(
+                                        "patient_number"
+                                ),
+                                resultSet.getString(
+                                        "patient_name"
+                                ),
+                                resultSet.getString(
+                                        "dentist_name"
+                                ),
+                                resultSet.getDate(
+                                        "appointment_date"
+                                ).toLocalDate(),
+                                resultSet.getTime(
+                                        "appointment_time"
+                                ).toLocalTime(),
+                                resultSet.getString(
+                                        "treatment_summary"
+                                ),
+                                resultSet.getBigDecimal(
+                                        "estimated_total"
+                                )
+                        )
+                );
+            }
+
+            return appointments;
+        } catch (SQLException exception) {
+            throw new IllegalStateException(
+                    "Unable to load completed unbilled appointments.",
+                    exception
+            );
+        }
+    }
 
     @Override
     public Optional<BillingSource>
@@ -434,6 +624,64 @@ public class JdbcBillDao implements BillDao {
         }
     }
 
+    @Override
+    public Optional<BillDetails> findDetailsByBillNumber(
+            String billNumber
+    ) {
+        try (
+                Connection connection =
+                        DatabaseConfig.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                FIND_DETAILS_BY_NUMBER
+                        )
+        ) {
+            statement.setString(1, billNumber);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(
+                            mapBillDetails(resultSet)
+                    );
+                }
+
+                return Optional.empty();
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException(
+                    "Unable to load invoice details.",
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public List<BillDetails> findAllDetails() {
+        List<BillDetails> bills = new ArrayList<>();
+
+        try (
+                Connection connection =
+                        DatabaseConfig.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                FIND_ALL_DETAILS
+                        );
+                ResultSet resultSet =
+                        statement.executeQuery()
+        ) {
+            while (resultSet.next()) {
+                bills.add(mapBillDetails(resultSet));
+            }
+
+            return bills;
+        } catch (SQLException exception) {
+            throw new IllegalStateException(
+                    "Unable to load invoice details.",
+                    exception
+            );
+        }
+    }
+
     private Optional<Bill> findSingleBill(
             String sql,
             String searchValue
@@ -572,5 +820,53 @@ public class JdbcBillDao implements BillDao {
         } catch (SQLException ignored) {
             // Nothing further can be done safely.
         }
+    }
+
+    private BillDetails mapBillDetails(
+            ResultSet resultSet
+    ) throws SQLException {
+        return new BillDetails(
+                resultSet.getLong("bill_id"),
+                resultSet.getString("bill_number"),
+                resultSet.getLong("appointment_id"),
+                resultSet.getString(
+                        "appointment_number"
+                ),
+                resultSet.getString("patient_number"),
+                resultSet.getString("patient_name"),
+                resultSet.getString("patient_contact"),
+                resultSet.getString("patient_email"),
+                resultSet.getString("patient_address"),
+                resultSet.getString("dentist_name"),
+                resultSet.getDate(
+                        "appointment_date"
+                ).toLocalDate(),
+                resultSet.getTime(
+                        "appointment_time"
+                ).toLocalTime(),
+                resultSet.getString("treatment_summary"),
+                resultSet.getBigDecimal(
+                        "consultation_fee"
+                ),
+                resultSet.getBigDecimal(
+                        "treatment_total"
+                ),
+                resultSet.getBigDecimal(
+                        "discount_amount"
+                ),
+                resultSet.getBigDecimal(
+                        "total_amount"
+                ),
+                resultSet.getBigDecimal(
+                        "amount_paid"
+                ),
+                PaymentStatus.valueOf(
+                        resultSet.getString("payment_status")
+                ),
+                resultSet.getString("issued_by_name"),
+                toLocalDateTime(
+                        resultSet.getTimestamp("issued_at")
+                )
+        );
     }
 }
