@@ -1,119 +1,47 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<c:set var="pageTitle" value="Patients" scope="request"/>
+<jsp:include page="/WEB-INF/views/includes/header.jsp"/>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<section class="page-heading">
+    <div><span class="eyebrow">Clinical directory</span><h1>Patients</h1><p>Search and maintain accurate patient information.</p></div>
+    <c:if test="${canManagePatients}"><a class="button button-primary" href="${pageContext.request.contextPath}/patients/new">Register patient</a></c:if>
+</section>
 
-    <title>Patients | Sunrise Dental Clinic</title>
+<c:if test="${not empty createdPatientNumber}"><div class="alert alert-success">Patient <strong><c:out value="${createdPatientNumber}"/></strong> registered successfully.</div></c:if>
+<c:if test="${not empty updatedPatientNumber}"><div class="alert alert-success">Patient <strong><c:out value="${updatedPatientNumber}"/></strong> updated successfully.</div></c:if>
+<c:if test="${not empty error}"><div class="alert alert-error"><c:out value="${error}"/></div></c:if>
 
-    <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/auth.css">
-</head>
-<body>
+<section class="panel">
+    <form class="search-bar" method="get" action="${pageContext.request.contextPath}/patients">
+        <label class="sr-only" for="q">Search patients</label>
+        <input id="q" name="q" maxlength="100" placeholder="Search number, name, NIC or contact" value="${fn:escapeXml(query)}">
+        <button class="button button-secondary" type="submit">Search</button>
+        <c:if test="${not empty query}"><a class="text-link" href="${pageContext.request.contextPath}/patients">Clear</a></c:if>
+    </form>
 
-<header class="topbar">
-    <div>
-        <p class="eyebrow">Sunrise Dental Clinic</p>
-        <h1>Patient Directory</h1>
-    </div>
-
-    <div class="topbar-actions">
-        <a class="secondary-button"
-           href="${pageContext.request.contextPath}/dashboard">
-            Dashboard
-        </a>
-
-        <a class="primary-link"
-           href="${pageContext.request.contextPath}/patients/new">
-            Register patient
-        </a>
-    </div>
-</header>
-
-<main class="page-shell">
-
-    <c:if test="${not empty createdPatientNumber}">
-        <div class="notice success-notice">
-            Patient registered successfully:
-            <strong>
-                <c:out value="${createdPatientNumber}"/>
-            </strong>
-        </div>
-    </c:if>
-
-    <c:if test="${not empty error}">
-        <div class="notice error-notice">
-            <c:out value="${error}"/>
-        </div>
-    </c:if>
-
-    <section class="content-panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Registered patients</p>
-                <h2>Patient records</h2>
-            </div>
-        </div>
-
-        <c:choose>
-            <c:when test="${empty patients}">
-                <div class="empty-state">
-                    <h3>No patients registered</h3>
-                    <p>
-                        Register the first patient to begin
-                        creating appointments.
-                    </p>
-                </div>
-            </c:when>
-
-            <c:otherwise>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
+    <c:choose>
+        <c:when test="${empty patients}"><div class="empty-state">No patient records match this search.</div></c:when>
+        <c:otherwise>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Patient</th><th>Contact</th><th>Date of birth</th><th>NIC</th><th class="align-right">Action</th></tr></thead>
+                    <tbody>
+                    <c:forEach var="patient" items="${patients}">
                         <tr>
-                            <th>Patient number</th>
-                            <th>Name</th>
-                            <th>Contact</th>
-                            <th>NIC</th>
-                            <th>Date of birth</th>
+                            <td><strong><c:out value="${patient.firstName()} ${patient.lastName()}"/></strong><small class="table-subtext"><c:out value="${patient.patientNumber()}"/></small></td>
+                            <td><c:out value="${patient.contactNumber()}"/><c:if test="${not empty patient.email()}"><small class="table-subtext"><c:out value="${patient.email()}"/></small></c:if></td>
+                            <td><c:out value="${empty patient.dateOfBirth() ? '—' : patient.dateOfBirth()}"/></td>
+                            <td><c:out value="${empty patient.nicNumber() ? '—' : patient.nicNumber()}"/></td>
+                            <td class="align-right"><c:if test="${canManagePatients}"><a class="button button-small button-secondary" href="${pageContext.request.contextPath}/patients/edit?id=${patient.patientId()}">Edit</a></c:if></td>
                         </tr>
-                        </thead>
+                    </c:forEach>
+                    </tbody>
+                </table>
+            </div>
+        </c:otherwise>
+    </c:choose>
+</section>
 
-                        <tbody>
-                        <c:forEach var="patient"
-                                   items="${patients}">
-                            <tr>
-                                <td>
-                                    <strong>
-                                        <c:out value="${patient.patientNumber()}"/>
-                                    </strong>
-                                </td>
-                                <td>
-                                    <c:out value="${patient.firstName()}"/>
-                                    <c:out value="${patient.lastName()}"/>
-                                </td>
-                                <td>
-                                    <c:out value="${patient.contactNumber()}"/>
-                                </td>
-                                <td>
-                                    <c:out value="${patient.nicNumber()}"/>
-                                </td>
-                                <td>
-                                    <c:out value="${patient.dateOfBirth()}"/>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                        </tbody>
-                    </table>
-                </div>
-            </c:otherwise>
-        </c:choose>
-    </section>
-</main>
-
-</body>
-</html>
+<jsp:include page="/WEB-INF/views/includes/footer.jsp"/>

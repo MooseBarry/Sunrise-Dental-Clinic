@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class PatientService {
-
     private final PatientDao patientDao;
 
     public PatientService(PatientDao patientDao) {
@@ -20,14 +19,75 @@ public class PatientService {
                     "PatientDao must not be null."
             );
         }
-
         this.patientDao = patientDao;
     }
 
-    public Patient register(
+    public Patient register(PatientRegistrationRequest request)
+            throws SQLException {
+        Patient patient = validate(
+                request,
+                0,
+                generatePatientNumber()
+        );
+        long id = patientDao.create(patient);
+        return copyWithId(patient, id);
+    }
+
+    public Patient update(
+            long patientId,
             PatientRegistrationRequest request
     ) throws SQLException {
+        Patient existing = patientDao.findById(patientId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Patient was not found."
+                ));
+        Patient updated = validate(
+                request,
+                patientId,
+                existing.patientNumber()
+        );
+        if (!patientDao.update(updated)) {
+            throw new SQLException("Patient record was not updated.");
+        }
+        return updated;
+    }
 
+    public List<Patient> getAllPatients() throws SQLException {
+        return patientDao.findAll();
+    }
+
+    public List<Patient> searchPatients(String query)
+            throws SQLException {
+        if (query == null || query.isBlank()) {
+            return getAllPatients();
+        }
+        String normalized = query.trim();
+        if (normalized.length() > 100) {
+            throw new IllegalArgumentException("Search value is too long.");
+        }
+        return patientDao.search(normalized);
+    }
+
+    public Optional<Patient> findByPatientNumber(String patientNumber)
+            throws SQLException {
+        if (patientNumber == null || patientNumber.isBlank()) {
+            return Optional.empty();
+        }
+        return patientDao.findByPatientNumber(patientNumber.trim());
+    }
+
+    public Optional<Patient> findById(long patientId)
+            throws SQLException {
+        return patientId <= 0
+                ? Optional.empty()
+                : patientDao.findById(patientId);
+    }
+
+    private Patient validate(
+            PatientRegistrationRequest request,
+            long patientId,
+            String patientNumber
+    ) {
         if (request == null) {
             throw new IllegalArgumentException(
                     "Patient information is required."
@@ -35,29 +95,19 @@ public class PatientService {
         }
 
         String firstName = requireText(
-                request.firstName(),
-                "First name",
-                60
+                request.firstName(), "First name", 60
         );
-
         String lastName = requireText(
-                request.lastName(),
-                "Last name",
-                60
+                request.lastName(), "Last name", 60
         );
-
         String contactNumber = requireText(
-                request.contactNumber(),
-                "Contact number",
-                20
+                request.contactNumber(), "Contact number", 20
         );
-
         if (!contactNumber.matches("[0-9+()\\-\\s]{7,20}")) {
             throw new IllegalArgumentException(
                     "Enter a valid contact number."
             );
         }
-
         if (request.dateOfBirth() != null
                 && request.dateOfBirth().isAfter(LocalDate.now())) {
             throw new IllegalArgumentException(
@@ -66,19 +116,18 @@ public class PatientService {
         }
 
         String email = optionalText(request.email(), 120);
-
-        if (email != null
-                && !email.matches(
-                "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
-        )) {
-            throw new IllegalArgumentException(
-                    "Enter a valid email address."
-            );
+        if (email != null) {
+            email = email.toLowerCase(Locale.ROOT);
+            if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                throw new IllegalArgumentException(
+                        "Enter a valid email address."
+                );
+            }
         }
 
-        Patient patient = new Patient(
-                0,
-                generatePatientNumber(),
+        return new Patient(
+                patientId,
+                patientNumber,
                 firstName,
                 lastName,
                 request.dateOfBirth(),
@@ -89,11 +138,11 @@ public class PatientService {
                 optionalText(request.address(), 255),
                 optionalText(request.medicalNotes(), 2000)
         );
+    }
 
-        long patientId = patientDao.create(patient);
-
+    private Patient copyWithId(Patient patient, long id) {
         return new Patient(
-                patientId,
+                id,
                 patient.patientNumber(),
                 patient.firstName(),
                 patient.lastName(),
@@ -107,29 +156,10 @@ public class PatientService {
         );
     }
 
-    public List<Patient> getAllPatients() throws SQLException {
-        return patientDao.findAll();
-    }
-
-    public Optional<Patient> findByPatientNumber(
-            String patientNumber
-    ) throws SQLException {
-
-        if (patientNumber == null || patientNumber.isBlank()) {
-            return Optional.empty();
-        }
-
-        return patientDao.findByPatientNumber(
-                patientNumber.trim()
-        );
-    }
-
     private String generatePatientNumber() {
-        String identifier = UUID.randomUUID()
-                .toString()
+        String identifier = UUID.randomUUID().toString()
                 .substring(0, 8)
                 .toUpperCase(Locale.ROOT);
-
         return "PAT-" + identifier;
     }
 
@@ -138,36 +168,25 @@ public class PatientService {
             String fieldName,
             int maximumLength
     ) {
-        String normalized = optionalText(
-                value,
-                maximumLength
-        );
-
+        String normalized = optionalText(value, maximumLength);
         if (normalized == null) {
             throw new IllegalArgumentException(
                     fieldName + " is required."
             );
         }
-
         return normalized;
     }
 
-    private String optionalText(
-            String value,
-            int maximumLength
-    ) {
+    private String optionalText(String value, int maximumLength) {
         if (value == null || value.isBlank()) {
             return null;
         }
-
         String normalized = value.trim();
-
         if (normalized.length() > maximumLength) {
             throw new IllegalArgumentException(
                     "A value exceeds the allowed length."
             );
         }
-
         return normalized;
     }
 }

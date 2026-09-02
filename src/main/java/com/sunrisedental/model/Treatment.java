@@ -7,6 +7,7 @@ public record Treatment(
         String treatmentCode,
         String treatmentName,
         String description,
-        BigDecimal standardFee
+        BigDecimal standardFee,
+        boolean active
 ) {
 }

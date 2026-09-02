@@ -107,6 +107,44 @@ public class JdbcPatientDao implements PatientDao {
     }
 
     @Override
+    public List<Patient> search(String query) throws SQLException {
+        String sql = SELECT_COLUMNS
+                + "WHERE patient_number LIKE ? "
+                + "OR first_name LIKE ? OR last_name LIKE ? "
+                + "OR contact_number LIKE ? OR nic_number LIKE ? "
+                + "ORDER BY created_at DESC";
+        List<Patient> patients = new ArrayList<>();
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            String pattern = "%" + query + "%";
+            for (int index = 1; index <= 5; index++) {
+                statement.setString(index, pattern);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    patients.add(mapPatient(resultSet));
+                }
+            }
+        }
+        return patients;
+    }
+
+    @Override
+    public Optional<Patient> findById(long patientId)
+            throws SQLException {
+        String sql = SELECT_COLUMNS + "WHERE patient_id = ?";
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, patientId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next()
+                        ? Optional.of(mapPatient(resultSet))
+                        : Optional.empty();
+            }
+        }
+    }
+
+    @Override
     public Optional<Patient> findByPatientNumber(
             String patientNumber
     ) throws SQLException {
@@ -129,6 +167,32 @@ public class JdbcPatientDao implements PatientDao {
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public boolean update(Patient patient) throws SQLException {
+        String sql = "UPDATE patients SET first_name = ?, last_name = ?, "
+                + "date_of_birth = ?, gender = ?, nic_number = ?, "
+                + "contact_number = ?, email = ?, address = ?, "
+                + "medical_notes = ? WHERE patient_id = ?";
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, patient.firstName());
+            statement.setString(2, patient.lastName());
+            if (patient.dateOfBirth() == null) {
+                statement.setNull(3, Types.DATE);
+            } else {
+                statement.setDate(3, Date.valueOf(patient.dateOfBirth()));
+            }
+            setNullableString(statement, 4, patient.gender());
+            setNullableString(statement, 5, patient.nicNumber());
+            statement.setString(6, patient.contactNumber());
+            setNullableString(statement, 7, patient.email());
+            setNullableString(statement, 8, patient.address());
+            setNullableString(statement, 9, patient.medicalNotes());
+            statement.setLong(10, patient.patientId());
+            return statement.executeUpdate() == 1;
+        }
     }
 
     private Patient mapPatient(ResultSet resultSet)

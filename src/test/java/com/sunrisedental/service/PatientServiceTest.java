@@ -162,10 +162,26 @@ class PatientServiceTest {
         }
 
         @Override
+        public List<Patient> search(String query) {
+            return findAll();
+        }
+
+        @Override
+        public Optional<Patient> findById(long patientId) {
+            return Optional.ofNullable(savedPatient);
+        }
+
+        @Override
         public Optional<Patient> findByPatientNumber(
                 String patientNumber
         ) {
             return Optional.ofNullable(savedPatient);
+        }
+
+        @Override
+        public boolean update(Patient patient) {
+            savedPatient = patient;
+            return true;
         }
     }
 }

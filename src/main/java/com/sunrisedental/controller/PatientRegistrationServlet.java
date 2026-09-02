@@ -4,6 +4,8 @@ import com.sunrisedental.dao.impl.JdbcPatientDao;
 import com.sunrisedental.model.Patient;
 import com.sunrisedental.service.PatientRegistrationRequest;
 import com.sunrisedental.service.PatientService;
+import com.sunrisedental.service.AuditService;
+import com.sunrisedental.service.AuthenticatedUser;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -28,12 +30,14 @@ public class PatientRegistrationServlet extends HttpServlet {
             );
 
     private PatientService patientService;
+    private AuditService auditService;
 
     @Override
     public void init() {
         patientService = new PatientService(
                 new JdbcPatientDao()
         );
+        auditService = new AuditService();
     }
 
     @Override
@@ -79,6 +83,11 @@ public class PatientRegistrationServlet extends HttpServlet {
 
             Patient patient =
                     patientService.register(registrationRequest);
+
+            AuthenticatedUser actor = (AuthenticatedUser)
+                    request.getAttribute("currentUser");
+            auditService.record(actor.userId(), "CREATE_PATIENT",
+                    "PATIENT", patient.patientNumber(), null);
 
             String patientNumber = URLEncoder.encode(
                     patient.patientNumber(),

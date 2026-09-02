@@ -38,15 +38,24 @@ public class PatientListServlet extends HttpServlet {
         try {
             request.setAttribute(
                     "patients",
-                    patientService.getAllPatients()
+                    patientService.searchPatients(
+                            request.getParameter("q")
+                    )
             );
+
+            request.setAttribute("query", request.getParameter("q"));
 
             request.setAttribute(
                     "createdPatientNumber",
                     request.getParameter("created")
             );
 
-        } catch (SQLException exception) {
+            request.setAttribute(
+                    "updatedPatientNumber",
+                    request.getParameter("updated")
+            );
+
+        } catch (SQLException | IllegalArgumentException exception) {
             LOGGER.log(
                     Level.SEVERE,
                     "Unable to load patients.",
@@ -56,7 +65,9 @@ public class PatientListServlet extends HttpServlet {
             request.setAttribute("patients", List.of());
             request.setAttribute(
                     "error",
-                    "Unable to load patient records."
+                    exception instanceof IllegalArgumentException
+                            ? exception.getMessage()
+                            : "Unable to load patient records."
             );
         }
 

@@ -12,7 +12,13 @@ public interface PatientDao {
 
     List<Patient> findAll() throws SQLException;
 
+    List<Patient> search(String query) throws SQLException;
+
+    Optional<Patient> findById(long patientId) throws SQLException;
+
     Optional<Patient> findByPatientNumber(
             String patientNumber
     ) throws SQLException;
+
+    boolean update(Patient patient) throws SQLException;
 }

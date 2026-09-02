@@ -92,7 +92,8 @@ public class JdbcClinicReferenceDao
                                 resultSet.getString("description"),
                                 resultSet.getBigDecimal(
                                         "standard_fee"
-                                )
+                                ),
+                                true
                         )
                 );
             }
