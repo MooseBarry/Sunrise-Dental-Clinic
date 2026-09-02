@@ -1,3 +1,13 @@
-database.url=jdbc:mysql://localhost:3306/sunrise_dental?useSSL=false&allowPublicKeyRetrieval=true
+database.url=jdbc:mysql://localhost:3306/sunrise_dental?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
 database.username=sunrise_app
-database.password=apppref_example_login_pw
+database.password=adminlogin123
+
+# Patient email notifications are optional and disabled by default.
+# Prefer the matching MAIL_* environment variables for real credentials.
+mail.enabled=false
+mail.host=smtp.gmail.com
+mail.port=587
+mail.username=
+mail.password=
+mail.from=no-reply@sunrisedental.lk
+mail.starttls=true

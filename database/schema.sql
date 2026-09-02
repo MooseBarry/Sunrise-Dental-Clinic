@@ -91,8 +91,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     CONSTRAINT chk_appointment_duration
     CHECK (duration_minutes > 0),
 
-    CONSTRAINT uq_dentist_start_time
-    UNIQUE (dentist_id, appointment_date, start_time),
+    INDEX idx_appointments_dentist_slot (
+        dentist_id,
+        appointment_date,
+        start_time
+    ),
 
     CONSTRAINT fk_appointments_patient
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
@@ -128,17 +131,146 @@ CREATE TABLE IF NOT EXISTS appointment_treatments (
 CREATE TABLE IF NOT EXISTS bills (
                                      bill_id BIGINT PRIMARY KEY AUTO_INCREMENT,
                                      bill_number VARCHAR(25) NOT NULL UNIQUE,
-    appointment_id BIGINT NOT NULL UNIQUE,
-    consultation_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    treatment_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    total_amount DECIMAL(10,2) NOT NULL,
-    payment_status VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
-    issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     appointment_id BIGINT NOT NULL UNIQUE,
+                                     consultation_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                                     treatment_total DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                                     discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                                     total_amount DECIMAL(10, 2) NOT NULL,
+                                     amount_paid DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                                     payment_status VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
+                                     issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     issued_by BIGINT NULL,
+                                     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                         ON UPDATE CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_payment_status
-    CHECK (payment_status IN ('UNPAID', 'PAID', 'PARTIALLY_PAID')),
+                                     INDEX idx_bills_payment_status (payment_status),
 
-    CONSTRAINT fk_bills_appointment
-    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id)
-    );
+                                     CONSTRAINT chk_payment_status
+                                         CHECK (
+                                             payment_status IN (
+                                                                'UNPAID',
+                                                                'PARTIALLY_PAID',
+                                                                'PAID'
+                                                 )
+                                             ),
+
+                                     CONSTRAINT chk_bill_amounts
+                                         CHECK (
+                                             consultation_fee >= 0.00
+                                                 AND treatment_total >= 0.00
+                                                 AND discount_amount >= 0.00
+                                                 AND total_amount >= 0.00
+                                                 AND discount_amount
+                                                 <= consultation_fee + treatment_total
+                                                 AND amount_paid >= 0.00
+                                                 AND amount_paid <= total_amount
+                                             ),
+
+                                     CONSTRAINT chk_bill_payment_progress
+                                         CHECK (
+                                             (
+                                                 payment_status = 'UNPAID'
+                                                     AND amount_paid = 0.00
+                                                 )
+                                                 OR
+                                             (
+                                                 payment_status = 'PARTIALLY_PAID'
+                                                     AND amount_paid > 0.00
+                                                     AND amount_paid < total_amount
+                                                 )
+                                                 OR
+                                             (
+                                                 payment_status = 'PAID'
+                                                     AND amount_paid = total_amount
+                                                 )
+                                             ),
+
+                                     CONSTRAINT fk_bills_appointment
+                                         FOREIGN KEY (appointment_id)
+                                             REFERENCES appointments(appointment_id),
+
+                                     CONSTRAINT fk_bills_issued_by
+                                         FOREIGN KEY (issued_by)
+                                             REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS bill_payments (
+                                             payment_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                             receipt_number VARCHAR(30) NOT NULL UNIQUE,
+                                             bill_id BIGINT NOT NULL,
+                                             amount DECIMAL(10, 2) NOT NULL,
+                                             payment_method VARCHAR(20) NOT NULL,
+                                             received_by BIGINT NOT NULL,
+                                             paid_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                                             CONSTRAINT chk_bill_payment_amount
+                                                 CHECK (amount > 0.00),
+
+                                             CONSTRAINT chk_bill_payment_method
+                                                 CHECK (
+                                                     payment_method IN (
+                                                                        'CASH',
+                                                                        'CARD',
+                                                                        'BANK_TRANSFER'
+                                                         )
+                                                     ),
+
+                                             CONSTRAINT fk_bill_payments_bill
+                                                 FOREIGN KEY (bill_id)
+                                                     REFERENCES bills(bill_id),
+
+                                             CONSTRAINT fk_bill_payments_receiver
+                                                 FOREIGN KEY (received_by)
+                                                     REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS staff_notifications (
+    notification_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    recipient_user_id BIGINT NOT NULL,
+    notification_type VARCHAR(30) NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    reference_type VARCHAR(30),
+    reference_value VARCHAR(50),
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_notifications_recipient (
+        recipient_user_id,
+        read_at,
+        created_at
+    ),
+
+    CONSTRAINT chk_notification_type
+    CHECK (
+        notification_type IN (
+            'APPOINTMENT',
+            'BILLING',
+            'PAYMENT',
+            'SYSTEM'
+        )
+    ),
+
+    CONSTRAINT fk_notifications_recipient
+    FOREIGN KEY (recipient_user_id)
+    REFERENCES users(user_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    audit_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    actor_user_id BIGINT NULL,
+    action_name VARCHAR(80) NOT NULL,
+    entity_type VARCHAR(40) NOT NULL,
+    entity_reference VARCHAR(60),
+    details VARCHAR(500),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_audit_created_at (created_at),
+    INDEX idx_audit_entity (entity_type, entity_reference),
+
+    CONSTRAINT fk_audit_actor
+    FOREIGN KEY (actor_user_id)
+    REFERENCES users(user_id)
+    ON DELETE SET NULL
+);
